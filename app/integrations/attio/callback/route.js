@@ -43,22 +43,36 @@ export async function GET(request) {
   const { access_token } = await tokenResp.json();
   if (!access_token) return NextResponse.json({ error: 'No access_token' }, { status: 500 });
 
-  // Optional: enable one-shot polling
+  // Store token in secure httpOnly cookie (not accessible to JavaScript)
+  // Set to expire in 30 days (can be adjusted based on token expiration)
+  cookieStore.set('attio_api_token', access_token, {
+    httpOnly: true, // Prevents JavaScript access (XSS protection)
+    sameSite: 'lax', // CSRF protection
+    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    path: '/',
+    maxAge: 60 * 60 * 24 * 30, // 30 days
+  });
+
+  // Also set temporary cookie for polling fallback (will be deleted after use)
   cookieStore.set('attio_token_once', access_token, {
-    httpOnly: true, sameSite: 'lax',
+    httpOnly: true,
+    sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
-    path: '/', maxAge: 120,
+    path: '/',
+    maxAge: 120, // 2 minutes
   });
 
   cookieStore.delete('attio_oauth_state');
 
+  // Return HTML that signals success without exposing token
   const html = `<!doctype html>
 <meta charset="utf-8"/>
 <title>Connected to Attio</title>
 <script>
   (function () {
     try {
-      var msg = { type: 'ATTIO_OAUTH_SUCCESS', access_token: ${JSON.stringify(access_token)} };
+      // Signal success without sending token (token is now in httpOnly cookie)
+      var msg = { type: 'ATTIO_OAUTH_SUCCESS' };
       if (window.opener) {
         window.opener.postMessage(msg, ${JSON.stringify(FRONTEND_ORIGIN)});
         // Give parent window time to receive the message before closing

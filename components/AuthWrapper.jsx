@@ -12,7 +12,6 @@ import ChatInterface from './ChatInterface';
 export default function AuthWrapper() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(false);
-  const [savedToken, setSavedToken] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
 
@@ -21,14 +20,31 @@ export default function AuthWrapper() {
 
   const OAUTH_START_URL = '/integrations/attio/connect';
 
-  // Check for existing token on mount
+  // Check authentication status on mount (reads from httpOnly cookie via API)
   useEffect(() => {
-    const storedToken = localStorage.getItem('attio_api_token');
-    if (storedToken) {
-      setSavedToken(storedToken);
-      setIsAuthenticated(true);
-    }
+    checkAuthStatus();
   }, []);
+
+  /**
+   * Check authentication status via API
+   */
+  const checkAuthStatus = async () => {
+    try {
+      const response = await fetch('/api/auth/status', { credentials: 'include' });
+      const data = await response.json();
+      const authenticated = data.authenticated || false;
+      setIsAuthenticated(authenticated);
+      // Close setup modal if authentication succeeds
+      if (authenticated) {
+        setShowSetupModal(false);
+      }
+      return authenticated;
+    } catch (error) {
+      console.error('Auth status check failed:', error);
+      setIsAuthenticated(false);
+      return false;
+    }
+  };
 
   // Listen for OAuth popup messages
   useEffect(() => {
@@ -36,14 +52,22 @@ export default function AuthWrapper() {
       if (event.origin !== window.location.origin) return;
       const data = event.data || {};
 
-      if (data.type === 'ATTIO_OAUTH_SUCCESS' && typeof data.access_token === 'string') {
+      // Token is now stored in httpOnly cookie, so we just check auth status
+      if (data.type === 'ATTIO_OAUTH_SUCCESS') {
         if (oauthPopupRef.current && !oauthPopupRef.current.closed) {
           try {
             oauthPopupRef.current.close();
           } catch {}
         }
         clearInterval(oauthPollRef.current);
-        await validateAndSaveToken(data.access_token);
+        setIsConnecting(false);
+        // Check auth status to confirm token was saved in cookie
+        const authenticated = await checkAuthStatus();
+        if (authenticated) {
+          showStatus('✅ Connected to Attio!', 'success');
+        } else {
+          showStatus('❌ Connection failed. Please try again.', 'error');
+        }
       } else if (data.type === 'ATTIO_OAUTH_ERROR' && data.message) {
         setIsConnecting(false);
         showStatus(`❌ ${data.message}`, 'error');
@@ -100,9 +124,16 @@ export default function AuthWrapper() {
         if (res.ok) {
           const json = await res.json();
           if (json && json.access_token) {
+            // Token was retrieved from temporary cookie, now check auth status
             oauthPopupRef.current.close();
             clearInterval(oauthPollRef.current);
-            await validateAndSaveToken(json.access_token);
+            setIsConnecting(false);
+            const authenticated = await checkAuthStatus();
+            if (authenticated) {
+              showStatus('✅ Connected to Attio!', 'success');
+            } else {
+              showStatus('❌ Connection failed. Please try again.', 'error');
+            }
           }
         }
       } catch {
@@ -111,44 +142,26 @@ export default function AuthWrapper() {
     }, 1000);
   };
 
-  /**
-   * Validate and save Attio token
-   */
-  const validateAndSaveToken = async (token) => {
-    showStatus('🔍 Validating Attio access...');
+  // Removed validateAndSaveToken - token is now stored in httpOnly cookie by callback route
+  // We just check auth status via API
 
+  /**
+   * Disconnect from Attio - clears httpOnly cookie via API
+   */
+  const handleDisconnect = async () => {
     try {
-      const resp = await fetch('https://api.attio.com/v2/objects', {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
       });
-
-      if (!resp.ok) throw new Error('Token validation failed');
-
-      localStorage.setItem('attio_api_token', token);
-      setSavedToken(token);
-      setIsAuthenticated(true);
-      setShowSetupModal(false);
-      showStatus('✅ Connected to Attio!', 'success');
-      setIsConnecting(false);
-    } catch (err) {
-      console.error('Token validation error:', err);
-      setIsConnecting(false);
-      showStatus('❌ Could not validate token', 'error');
+      setIsAuthenticated(false);
+      showStatus('🔌 Disconnected from Attio');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still update UI even if API call fails
+      setIsAuthenticated(false);
+      showStatus('🔌 Disconnected from Attio');
     }
-  };
-
-  /**
-   * Disconnect from Attio
-   */
-  const handleDisconnect = () => {
-    localStorage.removeItem('attio_api_token');
-    setSavedToken('');
-    setIsAuthenticated(false);
-    showStatus('🔌 Disconnected from Attio');
   };
 
   /**
@@ -265,7 +278,7 @@ export default function AuthWrapper() {
 
       {/* Main Content */}
       {isAuthenticated ? (
-        <ChatInterface attioApiKey={savedToken} />
+        <ChatInterface />
       ) : (
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="text-center max-w-md">

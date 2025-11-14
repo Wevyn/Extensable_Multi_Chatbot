@@ -7,8 +7,9 @@ import { Mic, MicOff, Send, Loader2 } from 'lucide-react';
  * ChatInterface Component
  * Dark-themed chat UI with text and voice input
  * Communicates with Claude backend to process CRM operations
+ * Token is automatically read from httpOnly cookie by backend
  */
-export default function ChatInterface({ attioApiKey }) {
+export default function ChatInterface() {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
@@ -111,15 +112,11 @@ export default function ChatInterface({ attioApiKey }) {
 
   /**
    * Send message to Claude backend
+   * Token is automatically read from httpOnly cookie by backend
    */
   const sendMessage = async () => {
     const messageText = inputText.trim();
     if (!messageText || isProcessing) return;
-
-    if (!attioApiKey) {
-      alert('Please connect to Attio first by clicking the settings icon.');
-      return;
-    }
 
     // Stop recording if active
     if (isRecording) {
@@ -140,15 +137,23 @@ export default function ChatInterface({ attioApiKey }) {
     setIsProcessing(true);
 
     try {
-      // Call backend API
+      // Prepare conversation history for context (last 20 messages to avoid token limits)
+      // Send previous messages only (current message is sent separately)
+      const recentMessages = messages.slice(-20).map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+      
+      // Call backend API (token is automatically read from httpOnly cookie)
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
+        credentials: 'include', // Include cookies in request
         body: JSON.stringify({
           message: messageText,
-          attioApiKey: attioApiKey
+          conversationHistory: recentMessages // Send conversation history for context
         })
       });
 
