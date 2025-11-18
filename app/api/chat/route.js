@@ -12,6 +12,7 @@ import { ControlBot } from '@/lib/bots/control-bot.js';
 import { getAllAdapters } from '@/lib/adapters/adapter-registry.js';
 import { getActiveAPIConfigs } from '@/lib/api-config-manager.js';
 import { makeAdaptive } from '@/lib/learning/adaptive-adapter.js';
+import { getCurrentKey } from '@/lib/claude-key-rotator.js';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 minutes max (to allow for rate limit retries)
@@ -68,11 +69,16 @@ export async function POST(request) {
       }, { status: 401 });
     }
     
-    // Use Claude Haiku (cheapest)
-    const claudeApiKey = process.env.ANTHROPIC_API_KEY;
-
-    if (!claudeApiKey) {
-      return NextResponse.json({ error: 'Server configuration error: Missing Claude API key' }, { status: 500 });
+    // Get Claude API key (from rotator or fallback to env var for backward compatibility)
+    let claudeApiKey;
+    try {
+      claudeApiKey = getCurrentKey();
+    } catch (error) {
+      // Fallback to single key for backward compatibility
+      claudeApiKey = process.env.ANTHROPIC_API_KEY;
+      if (!claudeApiKey) {
+        return NextResponse.json({ error: 'Server configuration error: Missing Claude API key. Set ANTHROPIC_API_KEY or ANTHROPIC_API_KEYS in environment.' }, { status: 500 });
+      }
     }
 
     // Create general bot with all active adapters

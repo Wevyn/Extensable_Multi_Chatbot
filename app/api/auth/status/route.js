@@ -1,45 +1,44 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { getAllAdapters } from '@/lib/adapters/adapter-registry.js';
 
 export const runtime = 'nodejs';
 
 /**
- * Check authentication status by reading httpOnly cookie
- * Returns whether user is authenticated (without exposing token)
+ * Check authentication status for all registered adapters
+ * Returns a map of adapter names to connection status as well as an aggregate flag
  */
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get('attio_api_token')?.value;
+    const adapters = getAllAdapters().map(AdapterClass => new AdapterClass());
+    const adapterStatuses = {};
 
-    if (!token) {
-      return NextResponse.json({ authenticated: false });
-    }
+    let authenticated = false;
 
-    // Validate token by making a test API call to Attio
-    try {
-      const resp = await fetch('https://api.attio.com/v2/objects', {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+    for (const adapter of adapters) {
+      const name = adapter.getName();
+      const cookieName = adapter.getCookieName();
+      const token = cookieStore.get(cookieName)?.value;
+      const connected = Boolean(token);
 
-      if (!resp.ok) {
-        // Token is invalid, clear it
-        cookieStore.delete('attio_api_token');
-        return NextResponse.json({ authenticated: false });
+      adapterStatuses[name] = {
+        connected,
+        cookieName
+      };
+
+      if (connected) {
+        authenticated = true;
       }
-
-      return NextResponse.json({ authenticated: true });
-    } catch (error) {
-      console.error('Token validation error:', error);
-      return NextResponse.json({ authenticated: false });
     }
+
+    return NextResponse.json({
+      authenticated,
+      adapters: adapterStatuses
+    });
   } catch (error) {
     console.error('Auth status check error:', error);
-    return NextResponse.json({ authenticated: false });
+    return NextResponse.json({ authenticated: false, adapters: {} });
   }
 }
 
