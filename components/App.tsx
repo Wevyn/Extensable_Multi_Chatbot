@@ -26,6 +26,152 @@ interface Message {
   timestamp: Date;
 }
 
+/**
+ * Format message text for better readability
+ * Converts lists, schedules, and structured content into formatted HTML
+ */
+function formatMessage(text: string) {
+  // Split by double newlines to preserve paragraphs
+  const paragraphs = text.split(/\n\n+/);
+  
+  return paragraphs.map((para, idx) => {
+    const trimmed = para.trim();
+    if (!trimmed) return null;
+    
+    // Check if it's a list item (starts with *, -, •, or number)
+    const listItemMatch = trimmed.match(/^[\*\-\•]\s+(.+)$/);
+    const numberedItemMatch = trimmed.match(/^(\d+)[\.\)]\s+(.+)$/);
+    
+    // Check if it's a date header (e.g., "Today (2025-11-19):", "Thursday (2025-11-20):")
+    const dateHeaderMatch = trimmed.match(/^(\*\*)?([A-Za-z]+day|Today|Tomorrow)\s*\([0-9\-]+\):?\s*\*\*?$/);
+    
+    // Check if it's a schedule item (contains time ranges like "6:50 PM - 7:50 PM" or "11:00 AM - 12:00 PM")
+    // Also handles formats like "A flight from SFO Airport (6:50 PM - 7:50 PM)"
+    const scheduleItemMatch = trimmed.match(/^[\*\-\•]\s*(.+?)\s+\((\d{1,2}:\d{2}\s*(AM|PM)\s*-\s*\d{1,2}:\d{2}\s*(AM|PM))\)/);
+    
+    if (dateHeaderMatch) {
+      return (
+        <div key={idx} style={{ marginTop: idx > 0 ? '20px' : '0', marginBottom: '12px' }}>
+          <strong style={{ fontSize: '18px', fontWeight: '600', color: '#111827' }}>
+            {trimmed.replace(/\*\*/g, '')}
+          </strong>
+        </div>
+      );
+    }
+    
+    if (scheduleItemMatch) {
+      const [, eventName, timeRange] = scheduleItemMatch;
+      return (
+        <div key={idx} style={{ marginLeft: '24px', marginBottom: '10px', paddingLeft: '12px', borderLeft: '3px solid rgba(180, 140, 220, 0.6)' }}>
+          <span style={{ fontWeight: '500', display: 'block', marginBottom: '2px' }}>{eventName.trim()}</span>
+          <span style={{ color: '#6b7280', fontSize: '15px' }}>{timeRange}</span>
+        </div>
+      );
+    }
+    
+    if (listItemMatch) {
+      return (
+        <div key={idx} style={{ marginLeft: '20px', marginBottom: '6px', paddingLeft: '8px' }}>
+          <span style={{ marginRight: '8px' }}>•</span>
+          <span>{listItemMatch[1]}</span>
+        </div>
+      );
+    }
+    
+    if (numberedItemMatch) {
+      return (
+        <div key={idx} style={{ marginLeft: '20px', marginBottom: '6px', paddingLeft: '8px' }}>
+          <span style={{ marginRight: '8px', fontWeight: '600' }}>{numberedItemMatch[1]}.</span>
+          <span>{numberedItemMatch[2]}</span>
+        </div>
+      );
+    }
+    
+    // Check if paragraph contains multiple lines that look like a list
+    const lines = trimmed.split('\n');
+    if (lines.length > 1) {
+      // Check if most lines start with list markers or are date headers
+      const listLines = lines.filter(line => {
+        const trimmedLine = line.trim();
+        return /^[\*\-\•\d]+[\.\)]\s/.test(trimmedLine) || 
+               /^([A-Za-z]+day|Today|Tomorrow)\s*\([0-9\-]+\):?/.test(trimmedLine) ||
+               /\((\d{1,2}:\d{2}\s*(AM|PM)\s*-\s*\d{1,2}:\d{2}\s*(AM|PM))\)/.test(trimmedLine);
+      });
+      
+      if (listLines.length >= lines.length * 0.5) {
+        // It's a list or schedule, format each line
+        return (
+          <div key={idx} style={{ marginBottom: '8px' }}>
+            {lines.map((line, lineIdx) => {
+              const trimmedLine = line.trim();
+              if (!trimmedLine) return null;
+              
+              // Check for date header
+              const dateMatch = trimmedLine.match(/^(\*\*)?([A-Za-z]+day|Today|Tomorrow)\s*\([0-9\-]+\):?\s*\*\*?$/);
+              if (dateMatch) {
+                return (
+                  <div key={lineIdx} style={{ marginTop: lineIdx > 0 ? '16px' : '0', marginBottom: '8px' }}>
+                    <strong style={{ fontSize: '18px', fontWeight: '600', color: '#111827' }}>
+                      {trimmedLine.replace(/\*\*/g, '')}
+                    </strong>
+                  </div>
+                );
+              }
+              
+              // Check for schedule item with time
+              const scheduleMatch = trimmedLine.match(/^[\*\-\•]\s*(.+?)\s+\((\d{1,2}:\d{2}\s*(AM|PM)\s*-\s*\d{1,2}:\d{2}\s*(AM|PM))\)/);
+              if (scheduleMatch) {
+                const [, eventName, timeRange] = scheduleMatch;
+                return (
+                  <div key={lineIdx} style={{ marginLeft: '24px', marginBottom: '10px', paddingLeft: '12px', borderLeft: '3px solid rgba(180, 140, 220, 0.6)' }}>
+                    <span style={{ fontWeight: '500', display: 'block', marginBottom: '2px' }}>{eventName.trim()}</span>
+                    <span style={{ color: '#6b7280', fontSize: '15px' }}>{timeRange}</span>
+                  </div>
+                );
+              }
+              
+              const bulletMatch = trimmedLine.match(/^[\*\-\•]\s+(.+)$/);
+              const numMatch = trimmedLine.match(/^(\d+)[\.\)]\s+(.+)$/);
+              
+              if (bulletMatch) {
+                return (
+                  <div key={lineIdx} style={{ marginLeft: '20px', marginBottom: '6px', paddingLeft: '8px' }}>
+                    <span style={{ marginRight: '8px' }}>•</span>
+                    <span>{bulletMatch[1]}</span>
+                  </div>
+                );
+              }
+              
+              if (numMatch) {
+                return (
+                  <div key={lineIdx} style={{ marginLeft: '20px', marginBottom: '6px', paddingLeft: '8px' }}>
+                    <span style={{ marginRight: '8px', fontWeight: '600' }}>{numMatch[1]}.</span>
+                    <span>{numMatch[2]}</span>
+                  </div>
+                );
+              }
+              
+              // Regular line
+              return (
+                <div key={lineIdx} style={{ marginBottom: '4px' }}>
+                  {trimmedLine}
+                </div>
+              );
+            })}
+          </div>
+        );
+      }
+    }
+    
+    // Regular paragraph
+    return (
+      <div key={idx} style={{ marginBottom: idx < paragraphs.length - 1 ? '12px' : '0', lineHeight: '1.6' }}>
+        {trimmed}
+      </div>
+    );
+  }).filter(Boolean);
+}
+
 export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -507,7 +653,9 @@ export default function App() {
                           overflowWrap: 'break-word'
                         }}
                       >
-                        <p style={{ color: '#111827', fontSize: '17px', lineHeight: '1.5', margin: 0, fontWeight: '500' }}>{message.text}</p>
+                        <div style={{ color: '#111827', fontSize: '17px', lineHeight: '1.6', margin: 0, fontWeight: '500' }}>
+                          {formatMessage(message.text)}
+                        </div>
                       </div>
                     </div>
                   ))}
