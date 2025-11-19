@@ -5,7 +5,7 @@ import { Mic, MicOff, Send, Loader2 } from 'lucide-react';
 
 /**
  * ChatInterface Component
- * Dark-themed chat UI with text and voice input
+ * Light-themed chat UI with text and voice input matching the pastel gradient design
  * Communicates with Claude backend to process CRM operations
  * Token is automatically read from httpOnly cookie by backend
  */
@@ -18,6 +18,7 @@ export default function ChatInterface() {
 
   const recognitionRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
   const textInputRef = useRef(null);
 
   // Auto-scroll to bottom when new messages arrive
@@ -201,154 +202,141 @@ export default function ChatInterface() {
     }
   };
 
+  const hasMessages = messages.length > 0;
+
   return (
-    <div className="flex flex-col h-full bg-gradient-to-br from-black via-gray-900 to-black text-white">
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 space-y-6">
-        {messages.length === 0 && (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center max-w-2xl px-4">
-              <div className="inline-flex p-6 rounded-3xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-white/10 mb-6">
-                <div className="text-6xl">💬</div>
-              </div>
-              <h2 className="text-2xl md:text-3xl font-bold mb-4 bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
-                Hi! I'm Extensible
-              </h2>
-              <p className="text-gray-400 mb-6 text-base leading-relaxed">
-                Your intelligent CRM assistant. Ask me to add contacts, create deals, update records, or anything else in your CRM.
-              </p>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-400">
-                <span className="text-indigo-400">💡</span>
-                <span>Try: "Add John Smith from Acme Corp as a new contact"</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {messages.map((msg, idx) => (
+    <div className="h-screen w-full relative overflow-hidden">
+      {/* Main Chat Container */}
+      <div className={`h-full flex flex-col items-center p-4 md:p-8 ${hasMessages ? 'justify-start' : 'justify-center'}`}>
+        <div className="w-full max-w-4xl h-full flex flex-col">
+          {/* Chat Area */}
           <div
-            key={idx}
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-4 duration-300`}
+            ref={chatContainerRef}
+            className={`flex-1 flex flex-col ${hasMessages ? 'justify-start overflow-y-auto pb-4' : 'justify-center items-center'}`}
           >
-            <div
-              className={`max-w-[85%] md:max-w-[75%] rounded-2xl px-5 py-3.5 shadow-lg ${
-                msg.role === 'user'
-                  ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white'
-                  : msg.isError
-                  ? 'bg-rose-500/10 border border-rose-500/30 text-rose-200'
-                  : 'glass-effect text-gray-100 border border-white/10'
-              }`}
-            >
-              <div className="whitespace-pre-wrap break-words leading-relaxed">{msg.content}</div>
-              <div className={`text-xs mt-2.5 flex items-center gap-2 ${
-                msg.role === 'user' ? 'opacity-70' : 'opacity-50'
-              }`}>
-                <span>{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                {msg.iterations > 0 && (
-                  <>
-                    <span className="w-1 h-1 rounded-full bg-current opacity-50"></span>
-                    <span>{msg.iterations} tool call{msg.iterations > 1 ? 's' : ''}</span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
+            {!hasMessages ? (
+              <div className="text-center flex flex-col items-center gap-6 w-full">
+                <h1 className="text-6xl md:text-7xl">What's New?</h1>
+                
+                {/* Input Area - Centered */}
+                <div className="w-full max-w-3xl bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl flex items-end px-4 py-3 gap-3">
+                  <button
+                    onClick={toggleRecording}
+                    disabled={isProcessing}
+                    className={`rounded-full flex-shrink-0 ${isRecording ? 'text-red-500' : 'text-gray-600'} mb-1`}
+                  >
+                    <Mic className="h-5 w-5" />
+                  </button>
 
-        {isProcessing && (
-          <div className="flex justify-start animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <div className="glass-effect border border-white/10 rounded-2xl px-5 py-3.5 flex items-center space-x-3 shadow-lg">
-              <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
-              <span className="text-sm text-gray-300">Processing your request...</span>
-            </div>
-          </div>
-        )}
+                  <textarea
+                    ref={textInputRef}
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    disabled={isProcessing}
+                    placeholder="Type a message..."
+                    rows={1}
+                    className="flex-1 bg-transparent border-none outline-none text-gray-800 placeholder-gray-400 resize-none overflow-y-auto py-2"
+                    style={{ maxHeight: '120px' }}
+                    onInput={(e) => {
+                      e.target.style.height = 'auto';
+                      const newHeight = Math.min(e.target.scrollHeight, 120);
+                      e.target.style.height = `${newHeight}px`;
+                    }}
+                  />
 
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input Area */}
-      <div className="glass-effect border-t border-white/5 px-4 md:px-8 py-5 backdrop-blur-xl">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-end space-x-3">
-            {/* Voice Recording Button */}
-            <button
-              onClick={toggleRecording}
-              disabled={isProcessing}
-              className={`flex-shrink-0 p-3.5 rounded-2xl transition-all duration-200 shadow-lg ${
-                isRecording
-                  ? 'bg-gradient-to-br from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 animate-pulse shadow-rose-500/30'
-                  : 'bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20'
-              } ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
-              title={isRecording ? 'Stop recording' : 'Start recording'}
-            >
-              {isRecording ? (
-                <MicOff className="w-5 h-5" />
-              ) : (
-                <Mic className="w-5 h-5" />
-              )}
-            </button>
-
-            {/* Text Input */}
-            <div className="flex-1 relative">
-              <textarea
-                ref={textInputRef}
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyPress={handleKeyPress}
-                disabled={isProcessing}
-                placeholder={isRecording ? 'Listening...' : 'Type a message or use voice...'}
-                className="w-full bg-white/5 border border-white/10 text-white rounded-2xl px-5 py-3.5 pr-12 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 placeholder:text-gray-500"
-                rows="1"
-                style={{
-                  minHeight: '54px',
-                  maxHeight: '150px'
-                }}
-                onInput={(e) => {
-                  e.target.style.height = 'auto';
-                  e.target.style.height = e.target.scrollHeight + 'px';
-                }}
-              />
-
-              {/* Transcript Indicator */}
-              {isRecording && transcript && (
-                <div className="absolute -top-7 right-0 text-xs text-gray-400 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
-                  <span>Transcribing...</span>
+                  <button
+                    onClick={sendMessage}
+                    disabled={!inputText.trim() || isProcessing}
+                    className="rounded-full flex-shrink-0 text-gray-600 hover:text-purple-600 mb-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Send className="h-5 w-5" />
+                  </button>
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="space-y-6 pt-20 pb-4">
+                {messages.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+                  >
+                    <span className="text-sm text-gray-700 mb-1 px-2">
+                      {msg.role === 'user' ? 'You' : 'Extensable'}
+                    </span>
+                    <div
+                      className={`max-w-[80%] md:max-w-[70%] rounded-3xl px-6 py-4 ${
+                        msg.role === 'user'
+                          ? 'bg-white/90 text-gray-800 shadow-lg'
+                          : msg.isError
+                          ? 'bg-rose-50 border border-rose-200 text-rose-700'
+                          : 'bg-purple-500/20 text-gray-800 shadow-md'
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.content}</p>
+                    </div>
+                  </div>
+                ))}
 
-            {/* Send Button */}
-            <button
-              onClick={sendMessage}
-              disabled={!inputText.trim() || isProcessing}
-              className="flex-shrink-0 p-3.5 bg-gradient-to-br from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-2xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-105"
-              title="Send message"
-            >
-              <Send className="w-5 h-5" />
-            </button>
+                {isProcessing && (
+                  <div className="flex flex-col items-start">
+                    <span className="text-sm text-gray-700 mb-1 px-2">Extensable</span>
+                    <div className="max-w-[80%] md:max-w-[70%] rounded-3xl px-6 py-4 bg-purple-500/20 text-gray-800 shadow-md">
+                      <div className="flex items-center space-x-3">
+                        <Loader2 className="w-4 h-4 animate-spin text-purple-500" />
+                        <span className="text-sm">Processing your request...</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div ref={messagesEndRef} />
+              </div>
+            )}
           </div>
 
-          {/* Recording Status */}
-          {isRecording && (
-            <div className="mt-3 text-sm text-gray-400 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
-              <span className="inline-block w-2 h-2 bg-rose-500 rounded-full animate-pulse shadow-lg shadow-rose-500/50"></span>
-              <span>Recording... Click the mic again or press send when done</span>
-            </div>
-          )}
+          {/* Input Area - Bottom (only shown when there are messages) */}
+          {hasMessages && (
+            <div className="w-full flex justify-center pb-4">
+              <div className="w-full max-w-3xl bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl flex items-end px-4 py-3 gap-3">
+                <button
+                  onClick={toggleRecording}
+                  disabled={isProcessing}
+                  className={`rounded-full flex-shrink-0 ${isRecording ? 'text-red-500' : 'text-gray-600'} mb-1`}
+                >
+                  <Mic className="h-5 w-5" />
+                </button>
 
-          {/* Browser Compatibility Warning */}
-          {typeof window !== 'undefined' &&
-           !window.SpeechRecognition &&
-           !window.webkitSpeechRecognition && (
-            <div className="mt-3 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-2.5 flex items-start gap-2">
-              <span className="flex-shrink-0 mt-0.5">⚠️</span>
-              <span>Voice input is not supported in your browser. For voice features, please use Chrome, Edge, or Safari.</span>
+                <textarea
+                  ref={textInputRef}
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  disabled={isProcessing}
+                  placeholder="Type a message..."
+                  rows={1}
+                  className="flex-1 bg-transparent border-none outline-none text-gray-800 placeholder-gray-400 resize-none overflow-y-auto py-2"
+                  style={{ maxHeight: '120px' }}
+                  onInput={(e) => {
+                    e.target.style.height = 'auto';
+                    const newHeight = Math.min(e.target.scrollHeight, 120);
+                    e.target.style.height = `${newHeight}px`;
+                  }}
+                />
+
+                <button
+                  onClick={sendMessage}
+                  disabled={!inputText.trim() || isProcessing}
+                  className="rounded-full flex-shrink-0 text-gray-600 hover:text-purple-600 mb-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Send className="h-5 w-5" />
+                </button>
+              </div>
             </div>
           )}
         </div>
       </div>
+
     </div>
   );
 }

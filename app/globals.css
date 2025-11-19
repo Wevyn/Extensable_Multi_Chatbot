@@ -15,9 +15,42 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%);
-  background-attachment: fixed;
-  color: #ffffff;
+  /* Background removed - let components control their own backgrounds */
+  margin: 0;
+  padding: 0;
+}
+
+/* Tailwind v4 CSS Variables for colors and spacing - using @theme directive */
+@theme {
+  --color-red-500: oklch(.637 .237 25.331);
+  --color-blue-100: oklch(.932 .032 255.585);
+  --color-blue-200: oklch(.882 .059 254.128);
+  --color-blue-300: oklch(.809 .105 251.813);
+  --color-blue-400: oklch(.707 .165 254.624);
+  --color-blue-600: oklch(.546 .245 262.881);
+  --color-purple-100: oklch(.946 .033 307.174);
+  --color-purple-200: oklch(.902 .063 306.703);
+  --color-purple-300: oklch(.827 .119 306.383);
+  --color-purple-400: oklch(.714 .203 305.504);
+  --color-purple-500: oklch(.627 .265 303.9);
+  --color-purple-600: oklch(.558 .288 302.321);
+  --color-pink-100: oklch(.948 .028 342.258);
+  --color-pink-200: oklch(.899 .061 343.231);
+  --color-pink-400: oklch(.718 .202 349.761);
+  --color-gray-400: oklch(.707 .022 261.325);
+  --color-gray-600: oklch(.446 .03 256.802);
+  --color-gray-700: oklch(.373 .034 259.733);
+  --color-gray-800: oklch(.278 .033 256.848);
+  --color-white: #fff;
+  --container-3xl: 48rem;
+  --container-4xl: 56rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+}
+
+/* Ensure max-w-3xl works correctly */
+.max-w-3xl {
+  max-width: var(--container-3xl, 48rem);
 }
 
 /* Custom scrollbar for dark theme */
@@ -38,6 +71,91 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%);
+}
+
+/* Animation keyframes for UI components */
+@keyframes enter {
+  from {
+    opacity: var(--tw-enter-opacity, 1);
+    transform: translate3d(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0), 0) scale3d(var(--tw-enter-scale, 1), var(--tw-enter-scale, 1), var(--tw-enter-scale, 1)) rotate(var(--tw-enter-rotate, 0));
+  }
+}
+
+@keyframes exit {
+  to {
+    opacity: var(--tw-exit-opacity, 1);
+    transform: translate3d(var(--tw-exit-translate-x, 0), var(--tw-exit-translate-y, 0), 0) scale3d(var(--tw-exit-scale, 1), var(--tw-exit-scale, 1), var(--tw-exit-scale, 1)) rotate(var(--tw-exit-rotate, 0));
+  }
+}
+
+/* Loading dots animation */
+@keyframes dot1 {
+  0%, 80%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes dot2 {
+  0%, 80%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes dot3 {
+  0%, 80%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animation utilities */
+.animate-in {
+  animation: enter var(--tw-duration, 0.15s) var(--tw-ease, ease);
+}
+
+.animate-out {
+  animation: exit var(--tw-duration, 0.15s) var(--tw-ease, ease);
+}
+
+.fade-in {
+  --tw-enter-opacity: 0;
+}
+
+.fade-out {
+  --tw-exit-opacity: 0;
+}
+
+.slide-in-from-left-2 {
+  --tw-enter-translate-x: -0.5rem;
+}
+
+.slide-out-to-left-2 {
+  --tw-exit-translate-x: -0.5rem;
+}
+
+/* Figma gradient background */
+.bg-figma-gradient {
+  background: linear-gradient(
+    125deg,
+    rgba(255, 200, 235, 1) 0%,
+    rgba(230, 180, 255, 0.9) 30%,
+    rgba(180, 200, 255, 1) 65%,
+    rgba(160, 215, 255, 1) 100%
+  );
 }
 
 /* Smooth animations */
@@ -64,5 +182,30 @@ body {
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: exclude;
     mask-composite: exclude;
+  }
+
+  /* Custom scrollbar for textarea */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+    margin: 4px 0;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+
+  /* Firefox */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db transparent;
   }
 }
