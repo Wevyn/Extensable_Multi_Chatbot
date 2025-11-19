@@ -1,5 +1,5 @@
-import AuthWrapper from '@/components/AuthWrapper';
+import App from '@/components/App';
 
 export default function Page() {
-  return <AuthWrapper />;
+  return <App />;
 }
