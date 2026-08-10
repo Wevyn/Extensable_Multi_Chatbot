@@ -15,7 +15,7 @@ export async function GET(request) {
     return NextResponse.json({ error: 'Invalid state' }, { status: 403 });
   }
 
-  const APP_BASE_URL = process.env.APP_BASE_URL ?? 'http://localhost:3000';
+  const APP_BASE_URL = (process.env.APP_BASE_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
   const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ?? APP_BASE_URL;
   const clientId = process.env.ATTIO_CLIENT_ID;
   const clientSecret = process.env.ATTIO_CLIENT_SECRET;

@@ -5,7 +5,7 @@ import crypto from 'crypto';
 export const runtime = 'nodejs';
 
 export async function GET() {
-  const APP_BASE_URL = process.env.APP_BASE_URL ?? 'http://localhost:3000';
+  const APP_BASE_URL = (process.env.APP_BASE_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
   const clientId = process.env.ATTIO_CLIENT_ID;
   if (!clientId) return NextResponse.json({ error: 'Missing ATTIO_CLIENT_ID' }, { status: 500 });
 

@@ -3,9 +3,18 @@
     "allow": [
       "Bash(cat:*)",
       "Bash(npm install:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(git commit -q -m 'Fix Vercel build: remove unused shadcn/ui components with missing deps *)",
+      "Bash(git push *)",
+      "Bash(npm view *)",
+      "Bash(ls -la /Users/Aditya/Extensable_Multi_Chatbot/.env* 2>/dev/null; echo \"---\"; [ -f /Users/Aditya/Extensable_Multi_Chatbot/.env.local ] && sed -E 's/=.*/=<set>/' /Users/Aditya/Extensable_Multi_Chatbot/.env.local)",
+      "Bash(sed -E 's/^\\([A-Z_0-9]+=.{8}\\).*/\\\\1.../' \"/Users/Aditya/Aditya's Startup Projects - Codebase/Extensible- sujay saran/conversational_ai_crm updated openapi with traditional MCP v2/.env.local\")"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "/Users/Aditya/Extensable_Multi_Chatbot",
+      "/Users/Aditya/Aditya's Startup Projects - Codebase/Extensible- sujay saran/conversational_ai_crm updated openapi with traditional MCP v2"
+    ]
   }
 }
